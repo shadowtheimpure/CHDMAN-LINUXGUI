@@ -29,7 +29,7 @@ ships with the app, so there is no separate MAME install to manage either.
 Download `CHDMAN-GUI-<version>-x86_64.flatpak` from the latest GitHub release:
 
 ```bash
-flatpak install --user ./CHDMAN-GUI-0.1.1-x86_64.flatpak
+flatpak install --user ./CHDMAN-GUI-0.1.2-x86_64.flatpak
 flatpak run io.github.shadowtheimpure.CHDMANGUI
 ```
 
@@ -181,6 +181,10 @@ resulting `.flatpak` bundle to the GitHub release.
   The app now detects the media type and offers to switch commands. For CD
   tracks with 2048-byte sectors, the extracted `.bin` is already a valid ISO —
   the form offers to name it `.iso` directly.
+- **Blank icon in the application launcher** — the Flatpak ships 16–512 px
+  icons, but a running desktop shell can keep a cached miss from a previous
+  version. Restart it with `systemctl --user restart plasma-plasmashell`
+  (KDE) or log out and back in.
 - **"chdman not found"** — open Settings and either let it use the bundled
   binary or point to an installed `chdman` (`mame-tools` on Fedora/Ubuntu).
 

@@ -1,7 +1,7 @@
 {
   "name": "chdman-gui",
   "productName": "CHDMAN GUI",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Graphical front-end for MAME's chdman CHD manager on Linux",
   "license": "MIT",
   "author": "CHDMAN GUI contributors",

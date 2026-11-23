@@ -27,11 +27,15 @@ modules:
       - install -Dm755 chdman-gui.sh /app/bin/chdman-gui
       - install -Dm644 io.github.shadowtheimpure.CHDMANGUI.desktop /app/share/applications/io.github.shadowtheimpure.CHDMANGUI.desktop
       - install -Dm644 io.github.shadowtheimpure.CHDMANGUI.metainfo.xml /app/share/metainfo/io.github.shadowtheimpure.CHDMANGUI.metainfo.xml
-      - install -Dm644 icon.png /app/share/icons/hicolor/512x512/apps/io.github.shadowtheimpure.CHDMANGUI.png
+      - |
+        for size in 16 24 32 48 64 128 256 512; do
+          install -Dm644 "${size}x${size}.png" \
+            "/app/share/icons/hicolor/${size}x${size}/apps/io.github.shadowtheimpure.CHDMANGUI.png"
+        done
     sources:
       - type: dir
         path: ../release/linux-unpacked
       - type: dir
         path: .
-      - type: file
-        path: ../build/icon.png
+      - type: dir
+        path: ../build/icons

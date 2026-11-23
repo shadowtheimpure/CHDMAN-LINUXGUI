@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Generate build/icon.png (512x512) for the app and its AppImage.
+"""Generate the application icon.
+
+Produces:
+  build/icon.png              512x512 master used by Electron and AppImage
+  build/icons/<size>x<size>.png  sizes installed by the Flatpak manifest
+
+Some desktop shells (notably KDE's Kickoff launcher) do not scale down a lone
+512x512 hicolor icon, so the full size range is generated and shipped.
 
 Requires Pillow. Run from the repository root:
     python3 scripts/make-icon.py
@@ -9,9 +16,12 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 SIZE = 512
+SIZES = (16, 24, 32, 48, 64, 128, 256, 512)
 TOP = (111, 155, 255)
 BOTTOM = (122, 76, 255)
-OUT = Path(__file__).resolve().parent.parent / "build" / "icon.png"
+BUILD = Path(__file__).resolve().parent.parent / "build"
+OUT = BUILD / "icon.png"
+ICON_DIR = BUILD / "icons"
 
 FONT_CANDIDATES = [
     "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-Bold.ttf",
@@ -70,6 +80,13 @@ def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     icon.save(OUT)
     print(f"wrote {OUT} ({OUT.stat().st_size} bytes)")
+
+    ICON_DIR.mkdir(parents=True, exist_ok=True)
+    for size in SIZES:
+        resized = icon.resize((size, size), Image.LANCZOS)
+        target = ICON_DIR / f"{size}x{size}.png"
+        resized.save(target)
+        print(f"wrote {target} ({target.stat().st_size} bytes)")
 
 
 if __name__ == "__main__":

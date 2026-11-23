@@ -32,6 +32,15 @@
   </categories>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.1.2" date="2026-11-23">
+      <description>
+        <p>
+          Ship the application icon at 16, 24, 32, 48, 64, 128, 256 and 512
+          pixels. KDE's Kickoff launcher did not scale a lone 512px icon, so
+          the entry appeared without an icon.
+        </p>
+      </description>
+    </release>
     <release version="0.1.1" date="2026-11-23">
       <description>
         <p>
