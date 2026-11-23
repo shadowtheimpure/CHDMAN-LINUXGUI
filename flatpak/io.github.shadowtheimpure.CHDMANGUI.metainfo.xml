@@ -27,6 +27,17 @@
   <launchable type="desktop-id">io.github.shadowtheimpure.CHDMANGUI.desktop</launchable>
   <url type="homepage">https://github.com/shadowtheimpure/CHDMAN-LINUXGUI</url>
   <url type="bugtracker">https://github.com/shadowtheimpure/CHDMAN-LINUXGUI/issues</url>
+  <url type="vcs-browser">https://github.com/shadowtheimpure/CHDMAN-LINUXGUI</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Start screen with file recommendations</caption>
+      <image type="source">https://raw.githubusercontent.com/shadowtheimpure/CHDMAN-LINUXGUI/main/docs/screenshot-main.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Built-in hard disk templates</caption>
+      <image type="source">https://raw.githubusercontent.com/shadowtheimpure/CHDMAN-LINUXGUI/main/docs/screenshot-templates.png</image>
+    </screenshot>
+  </screenshots>
   <categories>
     <category>Utility</category>
   </categories>
