@@ -168,6 +168,7 @@ export default function App() {
             onQueue={(job, front) => queue.addJob(job, front)}
             onToast={setToast}
             onOpenSettings={() => setRoute({ kind: 'settings' })}
+            onSwitchCommand={(id, prefill) => setRoute({ kind: 'command', id, prefill })}
           />
         )}
 

@@ -260,6 +260,31 @@ async function scenario() {
   log('extractcd produced the cue sheet');
   await screenshot('05-extract-done.png');
 
+  // --- wrong extractor is detected and offers the right command -----
+  await evaluate(CLICK_TEXT('CHD → DVD / ISO', '.nav-item'));
+  await waitFor('!!document.querySelector("#f-input")', 'extract dvd form');
+  await evaluate(SET_INPUT('#f-input', chdPath));
+  const guard = await waitFor(
+    `(() => {
+      const button = [...document.querySelectorAll('.banner-warn button')]
+        .find((b) => b.textContent.includes('Switch to CHD → CD image'));
+      return button ? button.textContent.trim() : null;
+    })()`,
+    'wrong-extractor warning',
+  );
+  log(`mismatch guard shown: "${guard}"`);
+  await screenshot('05b-mismatch-guard.png');
+  await evaluate(CLICK_TEXT('Switch to CHD → CD image'));
+  await waitFor(
+    `document.querySelector('.page-header h1')?.innerText === 'CHD → CD image'`,
+    'switch to CD extractor',
+  );
+  const carriedInput = await evaluate('document.querySelector("#f-input")?.value || null');
+  if (carriedInput !== chdPath) {
+    throw new Error(`Input path was not preserved when switching commands (${carriedInput})`);
+  }
+  log('command switched to the CD extractor with the input preserved');
+
   // --- HDD template browser ---------------------------------------
   await evaluate(CLICK_TEXT('HDD templates', '.nav-item'));
   await waitFor(

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { describeMetadata } from '../lib/info';
+import { detectChdMedia } from '../lib/info';
 import { formatBytes, formatDuration, formatTime } from '../lib/format';
 import type { Job } from '../lib/types';
 import { Icon } from './Icon';
@@ -74,7 +74,7 @@ export function JobDialog({ job, initialTab, onClose }: JobDialogProps) {
   };
 
   const info = job.info;
-  const media = info ? describeMetadata(info.metadata) : null;
+  const media = info ? detectChdMedia(info).label : null;
 
   return (
     <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>

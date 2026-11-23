@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   buildArgs,
+  COMMANDS_BY_ID,
   defaultValues,
   formatCommand,
   parseBytes,
   validate,
   type CommandDef,
+  type CommandId,
   type FieldDef,
   type FormValues,
 } from '../lib/commands';
@@ -14,8 +16,11 @@ import {
   dirname,
   filtersFor,
   formatBytes,
+  joinPath,
+  stem,
   suggestOutput,
 } from '../lib/format';
+import { detectChdMedia, parseInfo, type ChdMediaInfo } from '../lib/info';
 import type { ChdmanDetection, Job, StatResult } from '../lib/types';
 import { Icon } from './Icon';
 import { makeJobId } from '../hooks/useQueue';
@@ -27,8 +32,42 @@ interface CommandPageProps {
   onQueue: (job: Job, front: boolean) => void;
   onToast: (message: string) => void;
   onOpenSettings: () => void;
+  onSwitchCommand: (id: CommandId, prefill?: Record<string, string>) => void;
   lastInputDir: string;
 }
+
+const EXTRACT_COMMANDS = new Set<CommandId>([
+  'extractcd',
+  'extractdvd',
+  'extracthd',
+  'extractraw',
+  'extractld',
+]);
+
+const EXPECTED_MEDIA: Partial<Record<CommandId, ChdMediaInfo['kind']>> = {
+  extractcd: 'cd',
+  extractdvd: 'dvd',
+  extracthd: 'hd',
+  extractld: 'ld',
+};
+
+const MEDIA_COMMAND: Record<ChdMediaInfo['kind'], CommandId | null> = {
+  cd: 'extractcd',
+  dvd: 'extractdvd',
+  hd: 'extracthd',
+  ld: 'extractld',
+  raw: 'extractraw',
+  unknown: null,
+};
+
+const MEDIA_EXPECTATION: Record<ChdMediaInfo['kind'], string> = {
+  cd: 'CD images',
+  dvd: 'DVD/ISO images',
+  hd: 'hard disk images',
+  ld: 'LaserDisc captures',
+  raw: 'raw payloads',
+  unknown: 'unknown media',
+};
 
 const EXTRA_HELP: Partial<Record<string, string>> = {};
 
@@ -39,6 +78,7 @@ export function CommandPage({
   onQueue,
   onToast,
   onOpenSettings,
+  onSwitchCommand,
   lastInputDir,
 }: CommandPageProps) {
   const [values, setValues] = useState<FormValues>(() => ({
@@ -49,8 +89,44 @@ export function CommandPage({
   const [attempted, setAttempted] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [stats, setStats] = useState<Record<string, StatResult>>({});
+  const [media, setMedia] = useState<ChdMediaInfo | null>(null);
   const [copied, setCopied] = useState(false);
   const autoOutput = useRef<string>('');
+
+  const inputValue = String(values.input ?? '').trim();
+
+  /* Identify the CHD being extracted so we can catch mismatched commands. */
+  useEffect(() => {
+    if (!EXTRACT_COMMANDS.has(command.id)) {
+      setMedia(null);
+      return;
+    }
+    if (!inputValue) {
+      setMedia(null);
+      return;
+    }
+    let canceled = false;
+    setMedia(null);
+    const timer = setTimeout(async () => {
+      try {
+        const result = await window.api.runSync({ command: 'info', args: ['--input', inputValue] });
+        if (canceled || !result.ok) return;
+        setMedia(detectChdMedia(parseInfo(result.stdout)));
+      } catch {
+        /* probing is best-effort */
+      }
+    }, 300);
+    return () => {
+      canceled = true;
+      clearTimeout(timer);
+    };
+  }, [command.id, inputValue]);
+
+  const expectedKind = EXPECTED_MEDIA[command.id];
+  const mediaMismatch =
+    !!media && !!expectedKind && media.kind !== 'unknown' && media.kind !== expectedKind;
+  const suggestedCommandId = media ? MEDIA_COMMAND[media.kind] : null;
+  const suggestedCommand = suggestedCommandId ? COMMANDS_BY_ID[suggestedCommandId] : null;
 
   const errors = useMemo(() => validate(command, values), [command, values]);
 
@@ -240,6 +316,15 @@ export function CommandPage({
           <p className="page-summary">{command.summary}</p>
         </div>
         <div className="page-header-side">
+          {media && (
+            <span
+              className={`chip ${mediaMismatch ? 'chip-err' : 'chip-ok'}`}
+              title={media.label}
+            >
+              <Icon name={mediaMismatch ? 'alert' : 'check'} size={13} />
+              {media.short}
+            </span>
+          )}
           {detection?.found ? (
             <span className="chip chip-ok" title={detection.path}>
               <Icon name="check" size={13} /> chdman {detection.version}
@@ -252,6 +337,44 @@ export function CommandPage({
           )}
         </div>
       </header>
+
+      {mediaMismatch && media && suggestedCommand && expectedKind && (
+        <div className="banner banner-warn">
+          <Icon name="alert" />
+          <div>
+            <strong>{command.title} cannot produce a usable image from this file.</strong>{' '}
+            Detected {media.label}, but this command expects {MEDIA_EXPECTATION[expectedKind]}.
+            chdman would copy the CHD&apos;s internal sector layout verbatim, which is why the
+            result is not recognised as a disc image.
+          </div>
+          <button
+            className="btn btn-sm"
+            onClick={() => onSwitchCommand(suggestedCommand.id, { input: inputValue })}
+          >
+            Switch to {suggestedCommand.title}
+          </button>
+        </div>
+      )}
+
+      {command.id === 'extractcd' && media?.kind === 'cd' && media.payloadSectorSize === 2048 && (
+        <div className="banner banner-info">
+          <Icon name="info" />
+          <div>
+            This CHD stores 2048-byte (ISO-style) sectors. The extracted binary is already a valid
+            ISO image, so you can name the binary file <code>.iso</code> and use it directly.
+          </div>
+          <button
+            className="btn btn-sm"
+            onClick={() => {
+              const isoPath = joinPath(dirname(inputValue), `${stem(inputValue)}.iso`);
+              setValue('outputbin', isoPath);
+              onToast(`Binary output set to ${basename(isoPath)}`);
+            }}
+          >
+            Name binary .iso
+          </button>
+        </div>
+      )}
 
       {!detection?.found && (
         <div className="banner banner-warn">

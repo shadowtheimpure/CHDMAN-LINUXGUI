@@ -29,7 +29,7 @@ ships with the app, so there is no separate MAME install to manage either.
 Download `CHDMAN-GUI-<version>-x86_64.flatpak` from the latest GitHub release:
 
 ```bash
-flatpak install --user ./CHDMAN-GUI-0.1.0-x86_64.flatpak
+flatpak install --user ./CHDMAN-GUI-0.1.1-x86_64.flatpak
 flatpak run io.github.shadowtheimpure.CHDMANGUI
 ```
 
@@ -49,6 +49,9 @@ The bundle is built against `org.freedesktop.Platform//24.08` and
 - **Job queue** with real progress percentages, current phase and compression
   ratio, 1–4 parallel jobs, cancel/retry/remove, and "reveal output" on success.
 - **Live logs** per job — filterable, timestamped, copyable and saveable.
+- **Media-aware extraction**: the CHD type (CD/DVD/hard disk) is detected before
+  extracting; choosing the wrong extractor shows a warning with a one-click
+  switch to the correct command.
 - **Structured `info` results**: media type, CHD format version, logical/CHD
   size, ratio, SHA-1s, every header field and the raw metadata block.
 - **HDD template browser** for `createhd --template`, with one-click hand-off to
@@ -171,6 +174,13 @@ resulting `.flatpak` bundle to the GitHub release.
   and grant individual folders instead.
 - **Output already exists** — chdman refuses to overwrite by default. Enable
   *Overwrite existing output* (`--force`) in the form.
+- **An extracted ISO is not recognised** — a CHD created with `createcd` is a
+  CD image even when it contains DVD-sized data. Use **CHD → CD image**, not
+  **CHD → DVD / ISO**: the DVD extractor copies the CHD's 2448-byte CD units as
+  if they were 2048-byte DVD sectors, producing a file no program can read.
+  The app now detects the media type and offers to switch commands. For CD
+  tracks with 2048-byte sectors, the extracted `.bin` is already a valid ISO —
+  the form offers to name it `.iso` directly.
 - **"chdman not found"** — open Settings and either let it use the bundled
   binary or point to an installed `chdman` (`mame-tools` on Fedora/Ubuntu).
 

@@ -82,6 +82,110 @@ export function describeMetadata(lines: string[]): string | null {
   return null;
 }
 
+export type ChdKind = 'cd' | 'dvd' | 'hd' | 'ld' | 'raw' | 'unknown';
+
+export interface ChdMediaInfo {
+  kind: ChdKind;
+  /** Long description for banners. */
+  label: string;
+  /** Compact label for chips. */
+  short: string;
+  /** Track types reported by chdman (CD CHDs only). */
+  trackTypes: string[];
+  /** Size of the CHD's logical unit, when known. */
+  unitSize: number | null;
+  /** Payload sector size of a CD track (2048 for ISO-style, 2352 for raw). */
+  payloadSectorSize: 2048 | 2352 | null;
+}
+
+/**
+ * Classify a CHD from the output of `chdman info`.
+ *
+ * chdman does not print the media type as a single field, so this reads the
+ * metadata tags it stores (CHT2/TRACK for CDs, DVD for DVDs, GDDD for hard
+ * disks) and falls back to the unit size for metadata-less images.
+ */
+export function detectChdMedia(info: ParsedInfo): ChdMediaInfo {
+  const metadata = info.metadata.join('\n');
+  const unitField = info.fields.find((field) => field.key === 'Unit Size');
+  const unitSize = unitField ? toNumber(unitField.value) ?? null : null;
+  const trackTypes = Array.from(metadata.matchAll(/TRACK:\d+\s+TYPE:([A-Z0-9_]+)/g)).map(
+    (match) => match[1],
+  );
+
+  if (trackTypes.length) {
+    const raw = trackTypes.some((type) => /_RAW$/.test(type) || type === 'AUDIO');
+    const payloadSectorSize = raw ? 2352 : 2048;
+    const sectorLabel = raw ? 'raw 2352-byte sectors' : '2048-byte sectors';
+    return {
+      kind: 'cd',
+      label: `CD image · ${trackTypes.join(', ')} (${sectorLabel})`,
+      short: `CD · ${trackTypes.join(', ')}`,
+      trackTypes,
+      unitSize,
+      payloadSectorSize,
+    };
+  }
+  if (/Tag='DVD '/.test(metadata) || /DVD:/.test(metadata)) {
+    return {
+      kind: 'dvd',
+      label: 'DVD image',
+      short: 'DVD',
+      trackTypes: [],
+      unitSize,
+      payloadSectorSize: 2048,
+    };
+  }
+  if (/GDDD/.test(metadata)) {
+    return {
+      kind: 'hd',
+      label: 'Hard disk image',
+      short: 'Hard disk',
+      trackTypes: [],
+      unitSize,
+      payloadSectorSize: null,
+    };
+  }
+  if (/AVAV|AVLD/.test(metadata)) {
+    return {
+      kind: 'ld',
+      label: 'LaserDisc CHD',
+      short: 'LaserDisc',
+      trackTypes: [],
+      unitSize,
+      payloadSectorSize: null,
+    };
+  }
+  if (unitSize === 2048) {
+    return {
+      kind: 'dvd',
+      label: '2048-byte image (DVD-style CHD)',
+      short: 'DVD-style',
+      trackTypes: [],
+      unitSize,
+      payloadSectorSize: 2048,
+    };
+  }
+  if (unitSize) {
+    return {
+      kind: 'raw',
+      label: `Raw CHD · ${unitSize}-byte units`,
+      short: 'Raw',
+      trackTypes: [],
+      unitSize,
+      payloadSectorSize: null,
+    };
+  }
+  return {
+    kind: 'unknown',
+    label: 'Unknown CHD type',
+    short: 'Unknown',
+    trackTypes: [],
+    unitSize,
+    payloadSectorSize: null,
+  };
+}
+
 export interface TemplateRow {
   id: string;
   manufacturer: string;

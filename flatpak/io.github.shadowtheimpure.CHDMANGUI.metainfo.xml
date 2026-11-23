@@ -32,6 +32,16 @@
   </categories>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.1.1" date="2026-11-23">
+      <description>
+        <p>
+          Detect the CHD media type before extraction. Choosing CHD → DVD/ISO
+          for a CD CHD now warns and offers a one-click switch to the correct
+          extractor. CD tracks with 2048-byte sectors can be written directly
+          as a valid .iso.
+        </p>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-11-23" />
   </releases>
 </component>
