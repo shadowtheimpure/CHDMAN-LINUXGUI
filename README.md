@@ -1,15 +1,28 @@
 # CHDMAN GUI for Linux
 
-A desktop front-end for **chdman**, MAME's Compressed Hunks of Data (CHD) manager.
-Built with Electron, React and TypeScript and distributed as a **self-contained
-Flatpak**: the app, chdman itself and every library chdman needs are shipped
-inside the bundle, so it runs on any distribution without installing MAME,
-SDL3 or FLAC.
+A desktop front-end for **chdman**, MAME's Compressed Hunks of Data (CHD) manager,
+made for people who just want to move disc images between formats without
+opening a terminal. Built with Electron, React and TypeScript and distributed
+as a **self-contained Flatpak**: the app, chdman itself and every library chdman
+needs are shipped inside the bundle, so it runs on any distribution without
+installing MAME, SDL3 or FLAC.
 
 ![CHDMAN GUI](docs/screenshot-main.png)
 
 More screenshots: [HDD templates](docs/screenshot-templates.png) ·
 [Settings](docs/screenshot-settings.png)
+
+## Why this exists
+
+chdman is capable, but it is a command-line-only utility. Someone who simply
+wants to turn a `.cue`, `.gdi` or `.iso` into a `.chd` — or get their files back
+out again — first has to find the right command, remember the argument order,
+and follow progress scrolling past in a terminal. This project removes that
+barrier: choose the conversion, pick the input and output files, press Run.
+The app builds the arguments, shows progress, verifies results and keeps
+finished jobs visible in the queue, so converting between disc-image formats is
+a few clicks on the desktop instead of a command-line exercise. The engine
+ships with the app, so there is no separate MAME install to manage either.
 
 ## Install (Flatpak)
 
@@ -160,6 +173,27 @@ resulting `.flatpak` bundle to the GitHub release.
   *Overwrite existing output* (`--force`) in the form.
 - **"chdman not found"** — open Settings and either let it use the bundled
   binary or point to an installed `chdman` (`mame-tools` on Fedora/Ubuntu).
+
+## AI usage disclosure
+
+This project was developed with substantial AI assistance, disclosed here so
+users can weigh that accordingly.
+
+- The application code (Electron main/renderer process, React UI, build and
+  packaging scripts), the end-to-end test and this documentation were written
+  collaboratively by the maintainer and AI coding agents — primarily
+  **DeepSeek V4.1 Flash** running in the OpenCode agent harness — under the
+  maintainer's direction and review.
+- The bundled `chdman` is **not** AI-generated. It is unmodified upstream
+  MAME 0.289 source compiled from the official release, with SDL3 from
+  upstream SDL and the GCC runtime from Ubuntu.
+- AI-assisted code can contain mistakes. The app is exercised by an automated
+  UI test that creates, inspects and extracts real CHD files, but it is
+  provided as-is under the license below. Please report bugs through the issue
+  tracker instead of assuming any behaviour is authoritative.
+
+The human maintainer remains responsible for the repository, releases and
+correctness decisions.
 
 ## Licensing
 
