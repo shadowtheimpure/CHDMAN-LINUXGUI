@@ -4,5 +4,14 @@ release/
 .smoke/
 *.log
 
+# local Flatpak build state
+flatpak-build/
+flatpak-repo/
+*.flatpak
+
 # local Electron/Chromium caches
 .cache/
+
+# flatpak-builder state
+.fb-state/
+.flatpak-builder/

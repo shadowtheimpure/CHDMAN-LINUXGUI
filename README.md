@@ -1,13 +1,29 @@
 # CHDMAN GUI for Linux
 
 A desktop front-end for **chdman**, MAME's Compressed Hunks of Data (CHD) manager.
-Built with Electron, React and TypeScript, and shipped with a working chdman
-binary so it runs out of the box — no MAME installation required.
+Built with Electron, React and TypeScript and distributed as a **self-contained
+Flatpak**: the app, chdman itself and every library chdman needs are shipped
+inside the bundle, so it runs on any distribution without installing MAME,
+SDL3 or FLAC.
 
 ![CHDMAN GUI](docs/screenshot-main.png)
 
 More screenshots: [HDD templates](docs/screenshot-templates.png) ·
 [Settings](docs/screenshot-settings.png)
+
+## Install (Flatpak)
+
+Download `CHDMAN-GUI-<version>-x86_64.flatpak` from the latest GitHub release:
+
+```bash
+flatpak install --user ./CHDMAN-GUI-0.1.0-x86_64.flatpak
+flatpak run io.github.shadowtheimpure.CHDMANGUI
+```
+
+The bundle is built against `org.freedesktop.Platform//24.08` and
+`org.electronjs.Electron2.BaseApp//24.08`. If they are not installed yet,
+`flatpak install` offers to fetch them from Flathub (add the remote once with
+`flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo`).
 
 ## Features
 
@@ -29,9 +45,9 @@ More screenshots: [HDD templates](docs/screenshot-templates.png) ·
 
 ## Requirements
 
-- Linux x86_64. The bundled binary comes from Fedora 45 and runs on glibc-based
-  distributions; older systems can point Settings at their own chdman.
-- Node.js 20+ and npm only if you want to build from source.
+- x86_64 Linux with Flatpak 1.12+ (Flatpak itself provides the runtime and all
+  libraries; no MAME, SDL3 or FLAC installation is needed).
+- Node.js 20+ and npm only for building from source.
 
 ## Run from source
 
@@ -46,20 +62,33 @@ Production-style run (builds the renderer, then launches Electron):
 npm start
 ```
 
-## Build an AppImage
+## Build the Flatpak
+
+```bash
+./scripts/build-flatpak.sh
+```
+
+This packages the app with electron-builder and wraps it with flatpak-builder
+(using `org.flatpak.Builder` when `flatpak-builder` is not installed on the
+host). The result is `release/CHDMAN-GUI-<version>-x86_64.flatpak`.
+
+## Optional: AppImage
 
 ```bash
 npm run dist
 ```
 
-The AppImage is written to `release/`. It bundles `vendor/chdman` automatically
-through electron-builder `extraResources`.
+The AppImage is written to `release/`. It bundles `vendor/chdman` and its
+libraries too, but — unlike the Flatpak — it still relies on the host glibc and
+desktop stack. The bundled engine only needs glibc 2.34, so the AppImage works
+on Ubuntu 22.04+, Debian 12+, Fedora 36+, RHEL 9+ and newer.
 
-Releases are automated: pushing a tag such as `v0.1.0` makes GitHub Actions run
-the smoke test, build the AppImage and attach it to the GitHub release
-(`.github/workflows/build.yml`).
+## The bundled engine
 
-## How chdman is located
+`vendor/chdman/bin/chdman` is MAME 0.289 **built from source** inside an Ubuntu
+22.04 container with GCC 12. Its third-party codecs (zlib, zstd, FLAC,
+utf8proc, expat, 7-Zip) are statically linked, and `libSDL3`, `libstdc++` and
+`libgcc_s` ship next to it. The binary only requires glibc 2.34 symbols.
 
 The app resolves the engine in this order and verifies it by running it:
 
@@ -68,13 +97,13 @@ The app resolves the engine in this order and verifies it by running it:
 3. the bundled binary in `vendor/chdman/bin/chdman`,
 4. `chdman` found in `PATH`.
 
-The bundled binary needs `libutf8proc.so.3`, which is shipped next to it in
-`vendor/chdman/lib` and injected via `LD_LIBRARY_PATH` for the child process
-only. See [`vendor/chdman/README.md`](vendor/chdman/README.md) for provenance.
-To refresh it:
+Libraries are injected with `LD_LIBRARY_PATH` **only for the chdman child
+process**, never for Electron itself. See
+[`vendor/chdman/README.md`](vendor/chdman/README.md) for provenance and
+licensing. To rebuild it:
 
 ```bash
-./scripts/fetch-chdman.sh
+./scripts/build-engine.sh      # needs podman; builds chdman + SDL3 in Ubuntu 22.04
 ```
 
 ## Keyboard shortcuts
@@ -88,16 +117,18 @@ To refresh it:
 ## Project layout
 
 ```
-electron/main.js        Main process: engine discovery, job spawning, IPC
-electron/preload.js     contextBridge API (sandboxed renderer)
-src/lib/commands.ts     Schema for every chdman command → forms + argv
-src/lib/info.ts         Parsers for `info` and `listtemplates` output
-src/hooks/useQueue.ts   Queue state machine, progress/log streaming
-src/components/         UI: sidebar, forms, queue, dialogs, settings, templates
-scripts/dev.mjs         Dev launcher (Vite + Electron)
-scripts/smoke-ui.mjs    End-to-end UI test driven over the DevTools protocol
-scripts/fetch-chdman.sh Re-download the bundled engine
-vendor/chdman/          Bundled chdman + libutf8proc
+electron/main.js              Main process: engine discovery, job spawning, IPC
+electron/preload.js           contextBridge API (sandboxed renderer)
+src/lib/commands.ts           Schema for every chdman command → forms + argv
+src/lib/info.ts               Parsers for `info` and `listtemplates` output
+src/hooks/useQueue.ts         Queue state machine, progress/log streaming
+src/components/               UI: sidebar, forms, queue, dialogs, settings, templates
+flatpak/                      Flatpak manifest, desktop entry, AppStream metadata
+scripts/dev.mjs               Dev launcher (Vite + Electron)
+scripts/smoke-ui.mjs          End-to-end UI test over the DevTools protocol
+scripts/build-engine.sh       Rebuild the distro-agnostic chdman engine
+scripts/build-flatpak.sh      Build the release Flatpak bundle
+vendor/chdman/                Bundled chdman + libSDL3 + GCC runtime
 ```
 
 ## Testing
@@ -110,20 +141,29 @@ This creates `.smoke/` fixtures, launches the built app with the DevTools
 protocol enabled, drives the real UI to create a CHD, inspect it, extract it
 back, and screenshots each step. It exits non-zero on any failure.
 
+CI runs the same smoke test and then builds the Flatpak on every push
+(`.github/workflows/build.yml`). Pushing a tag such as `v0.1.0` attaches the
+resulting `.flatpak` bundle to the GitHub release.
+
 ## Troubleshooting
 
 - **`--ozone-platform=wayland is not compatible with Vulkan`** — harmless
   Chromium notice on Wayland; Electron falls back to software/GL rendering.
 - **Electron will not start on an immutable distro (sandbox error)** — run
-  `ELECTRON_NO_SANDBOX=1 npm run dev`. Prefer fixing the `chrome-sandbox`
-  permissions for packaged builds.
-- **"chdman not found"** — open Settings and either let it use the bundled
-  binary or point to an installed `chdman` (`mame-tools` on Fedora).
+  `ELECTRON_NO_SANDBOX=1 npm run dev` for source builds.
+- **Flatpak cannot see a file** — the bundle requests host filesystem access
+  (`--filesystem=host`) because chdman reads and writes multi-file images
+  anywhere on disk. You can restrict it with
+  `flatpak override --user --nofilesystem=host io.github.shadowtheimpure.CHDMANGUI`
+  and grant individual folders instead.
 - **Output already exists** — chdman refuses to overwrite by default. Enable
   *Overwrite existing output* (`--force`) in the form.
+- **"chdman not found"** — open Settings and either let it use the bundled
+  binary or point to an installed `chdman` (`mame-tools` on Fedora/Ubuntu).
 
 ## Licensing
 
-This front-end is MIT-licensed. chdman is part of MAME and is licensed under the
-GPL-2.0-or-later; utf8proc is MIT. If you redistribute an AppImage containing the
-bundled binaries, keep their licenses and source availability with it.
+This front-end is MIT-licensed. chdman is part of MAME (GPL-2.0-or-later);
+SDL3 is Zlib; `libstdc++`/`libgcc` carry the GCC runtime exception; statically
+linked codecs keep their own licenses. If you redistribute the Flatpak or
+AppImage, keep their licenses and source availability with it.

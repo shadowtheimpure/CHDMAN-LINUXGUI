@@ -1,0 +1,37 @@
+app-id: io.github.shadowtheimpure.CHDMANGUI
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+base: org.electronjs.Electron2.BaseApp
+base-version: '24.08'
+command: chdman-gui
+separate-locales: false
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --filesystem=host
+  - --talk-name=org.freedesktop.Notifications
+  - --env=ELECTRON_OZONE_PLATFORM_HINT=auto
+modules:
+  - name: chdman-gui
+    buildsystem: simple
+    build-options:
+      strip: false
+    build-commands:
+      # The unpacked Electron application (renderer bundle + bundled engine)
+      # is prepared by `electron-builder --linux dir` before this manifest runs.
+      - mkdir -p /app/main
+      - cp -a . /app/main
+      - install -Dm755 chdman-gui.sh /app/bin/chdman-gui
+      - install -Dm644 io.github.shadowtheimpure.CHDMANGUI.desktop /app/share/applications/io.github.shadowtheimpure.CHDMANGUI.desktop
+      - install -Dm644 io.github.shadowtheimpure.CHDMANGUI.metainfo.xml /app/share/metainfo/io.github.shadowtheimpure.CHDMANGUI.metainfo.xml
+      - install -Dm644 icon.png /app/share/icons/hicolor/512x512/apps/io.github.shadowtheimpure.CHDMANGUI.png
+    sources:
+      - type: dir
+        path: ../release/linux-unpacked
+      - type: dir
+        path: .
+      - type: file
+        path: ../build/icon.png

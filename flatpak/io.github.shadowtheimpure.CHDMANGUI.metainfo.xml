@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.shadowtheimpure.CHDMANGUI</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>CHDMAN GUI</name>
+  <summary>Graphical front-end for MAME's chdman</summary>
+  <developer id="io.github.shadowtheimpure">
+    <name>shadowtheimpure</name>
+  </developer>
+  <description>
+    <p>
+      Create, inspect, verify and extract MAME CHD (Compressed Hunks of Data)
+      images without touching the command line.
+    </p>
+    <p>
+      Every chdman sub-command is available as a guided form: CD, DVD, hard
+      disk, raw and LaserDisc creation, extraction back to cue/bin or ISO,
+      recompression, metadata editing and the built-in HDD template list.
+    </p>
+    <p>
+      Jobs run in a queue with live progress, compression ratio, per-job logs
+      and structured CHD summaries (hashes, sizes, media type, metadata).
+      A working chdman engine and all of its libraries ship inside the app.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.shadowtheimpure.CHDMANGUI.desktop</launchable>
+  <url type="homepage">https://github.com/shadowtheimpure/CHDMAN-LINUXGUI</url>
+  <url type="bugtracker">https://github.com/shadowtheimpure/CHDMAN-LINUXGUI/issues</url>
+  <categories>
+    <category>Utility</category>
+  </categories>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.1.0" date="2026-11-23" />
+  </releases>
+</component>

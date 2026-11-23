@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=CHDMAN GUI
+Comment=Graphical front-end for MAME's chdman
+Exec=chdman-gui
+Icon=io.github.shadowtheimpure.CHDMANGUI
+Terminal=false
+Type=Application
+Categories=Utility;
+Keywords=chd;chdman;mame;emulation;iso;cd;dvd;compress;
+StartupNotify=true
+StartupWMClass=io.github.shadowtheimpure.CHDMANGUI

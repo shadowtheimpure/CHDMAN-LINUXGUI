@@ -5,7 +5,7 @@
   "description": "Graphical front-end for MAME's chdman CHD manager on Linux",
   "license": "MIT",
   "author": "CHDMAN GUI contributors",
-  "desktopName": "chdman-gui.desktop",
+  "desktopName": "io.github.shadowtheimpure.CHDMANGUI.desktop",
   "main": "electron/main.js",
   "type": "commonjs",
   "scripts": {
@@ -14,7 +14,9 @@
     "typecheck": "tsc --noEmit",
     "start": "npm run build && electron .",
     "smoke": "npm run build && node scripts/smoke-ui.mjs",
-    "dist": "npm run build && electron-builder --linux AppImage"
+    "dist": "npm run build && electron-builder --linux AppImage",
+    "flatpak": "bash scripts/build-flatpak.sh",
+    "engine": "bash scripts/build-engine.sh"
   },
   "devDependencies": {
     "@types/react": "^19.2.0",
@@ -28,7 +30,7 @@
     "react-dom": "^19.3.1"
   },
   "build": {
-    "appId": "io.github.chdmangui.CHDMANGUI",
+    "appId": "io.github.shadowtheimpure.CHDMANGUI",
     "productName": "CHDMAN GUI",
     "directories": {
       "output": "release"
