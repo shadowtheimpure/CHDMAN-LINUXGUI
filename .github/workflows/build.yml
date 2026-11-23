@@ -81,11 +81,12 @@ jobs:
 
       - name: Build Flatpak
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
           flatpak-builder --user --disable-rofiles-fuse --force-clean \
             --repo=flatpak-repo flatpak-build \
             flatpak/io.github.shadowtheimpure.CHDMANGUI.yaml
           flatpak build-bundle flatpak-repo \
-            "CHDMAN-GUI-${GITHUB_REF_NAME}-x86_64.flatpak" \
+            "CHDMAN-GUI-${VERSION}-x86_64.flatpak" \
             io.github.shadowtheimpure.CHDMANGUI
 
       - name: Upload bundle
