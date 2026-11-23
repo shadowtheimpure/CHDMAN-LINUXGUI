@@ -1,0 +1,58 @@
+{
+  "name": "chdman-gui",
+  "productName": "CHDMAN GUI",
+  "version": "0.1.0",
+  "description": "Graphical front-end for MAME's chdman CHD manager on Linux",
+  "license": "MIT",
+  "author": "CHDMAN GUI contributors",
+  "desktopName": "chdman-gui.desktop",
+  "main": "electron/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "start": "npm run build && electron .",
+    "smoke": "npm run build && node scripts/smoke-ui.mjs",
+    "dist": "npm run build && electron-builder --linux AppImage"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.8",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "build": {
+    "appId": "io.github.chdmangui.CHDMANGUI",
+    "productName": "CHDMAN GUI",
+    "directories": {
+      "output": "release"
+    },
+    "artifactName": "CHDMAN-GUI-${version}-${arch}.${ext}",
+    "files": [
+      "electron/**/*",
+      "dist/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor/chdman",
+        "to": "vendor/chdman"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility",
+      "icon": "build/icon.png",
+      "executableName": "chdman-gui"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+release/
+.smoke/
+*.log
+
+# local Electron/Chromium caches
+.cache/

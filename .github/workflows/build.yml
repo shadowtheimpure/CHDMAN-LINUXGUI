@@ -1,0 +1,59 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  appimage:
+    name: Build & test AppImage
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Build renderer
+        run: npm run build
+
+      - name: Install virtual display
+        run: sudo apt-get update && sudo apt-get install -y xvfb libfuse2
+
+      - name: Smoke test (real chdman round-trip)
+        env:
+          ELECTRON_NO_SANDBOX: "1"
+        run: xvfb-run -a node scripts/smoke-ui.mjs
+
+      - name: Package AppImage
+        run: npx electron-builder --linux AppImage --publish never
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CHDMAN-GUI-AppImage
+          path: release/*.AppImage
+          if-no-files-found: error
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*.AppImage
+          generate_release_notes: true
