@@ -128,6 +128,24 @@ export function CommandPage({
   const suggestedCommandId = media ? MEDIA_COMMAND[media.kind] : null;
   const suggestedCommand = suggestedCommandId ? COMMANDS_BY_ID[suggestedCommandId] : null;
 
+  // Arriving from the start screen (or a template) with an input prefilled:
+  // fill a sensible output path without waiting for the user to edit a field.
+  useEffect(() => {
+    const outputField = command.fields.find(
+      (field) => field.key === 'output' || field.key === 'outputbin',
+    );
+    if (!outputField) return;
+    setValues((previous) => {
+      const input = String(previous.input ?? '').trim();
+      const current = String(previous[outputField.key] ?? '');
+      if (!input || current) return previous;
+      const suggestion = suggestOutput(command.id, input);
+      autoOutput.current = suggestion;
+      return { ...previous, [outputField.key]: suggestion };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const errors = useMemo(() => validate(command, values), [command, values]);
 
   /* Track file existence for every path-ish field. */

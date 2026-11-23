@@ -29,8 +29,14 @@ ships with the app, so there is no separate MAME install to manage either.
 Download `CHDMAN-GUI-<version>-x86_64.flatpak` from the latest GitHub release:
 
 ```bash
-flatpak install --user ./CHDMAN-GUI-0.1.2-x86_64.flatpak
+flatpak install --user ./CHDMAN-GUI-0.2.0-x86_64.flatpak
 flatpak run io.github.shadowtheimpure.CHDMANGUI
+```
+
+You can also open a file directly (the desktop's *Open With* action works too):
+
+```bash
+flatpak run io.github.shadowtheimpure.CHDMANGUI ~/Downloads/game.iso
 ```
 
 The bundle is built against `org.freedesktop.Platform//24.08` and
@@ -40,6 +46,10 @@ The bundle is built against `org.freedesktop.Platform//24.08` and
 
 ## Features
 
+- **Smart start screen**: drop a file onto the window (or open it with the app)
+  and it identifies the content, then recommends the valid operations — extract
+  a CD/DVD/hard-disk CHD, build a CHD from cue/gdi/ISO, verify, inspect — each
+  opening a pre-filled form.
 - **Every chdman command**: `info`, `verify`, `createraw`, `createhd`, `createcd`,
   `createdvd`, `createld`, `extractraw`, `extracthd`, `extractcd`, `extractdvd`,
   `extractld`, `copy`, `addmeta`, `delmeta`, `dumpmeta`, `listtemplates`.
@@ -135,6 +145,8 @@ licensing. To rebuild it:
 ```
 electron/main.js              Main process: engine discovery, job spawning, IPC
 electron/preload.js           contextBridge API (sandboxed renderer)
+src/components/HomePage.tsx   Start screen: file analysis + recommendations
+src/lib/analyze.ts            Maps a file probe to ranked chdman operations
 src/lib/commands.ts           Schema for every chdman command → forms + argv
 src/lib/info.ts               Parsers for `info` and `listtemplates` output
 src/hooks/useQueue.ts         Queue state machine, progress/log streaming
@@ -153,9 +165,10 @@ vendor/chdman/                Bundled chdman + libSDL3 + GCC runtime
 npm run smoke
 ```
 
-This creates `.smoke/` fixtures, launches the built app with the DevTools
-protocol enabled, drives the real UI to create a CHD, inspect it, extract it
-back, and screenshots each step. It exits non-zero on any failure.
+This creates `.smoke/` fixtures, launches the built app with a test cue sheet
+passed on the command line, follows the start-screen recommendation into the
+pre-filled form, creates a CHD, inspects it, extracts it back, and screenshots
+each step. It exits non-zero on any failure.
 
 CI runs the same smoke test and then builds the Flatpak on every push
 (`.github/workflows/build.yml`). Pushing a tag such as `v0.1.0` attaches the

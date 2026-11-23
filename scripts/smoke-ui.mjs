@@ -175,16 +175,39 @@ async function screenshot(name) {
 async function scenario() {
   await waitFor('!!document.querySelector(".sidebar")', 'UI shell');
   log('UI shell rendered');
-  await screenshot('01-create-cd.png');
 
-  // --- create a CHD from the cue sheet -----------------------------
-  if (!(await evaluate(SET_INPUT('#f-input', cuePath)))) throw new Error('Input field missing');
-  await sleep(200);
-  const suggested = await evaluate('document.querySelector("#f-output")?.value');
+  // --- start screen: analyse the file passed on the command line ---
+  await waitFor('!!document.querySelector(".home-page")', 'start screen');
+  const dropzoneText = await evaluate('document.querySelector(".dropzone")?.innerText || ""');
+  if (!/Drop a file|Choose a different file/.test(dropzoneText)) {
+    throw new Error('Start screen drop zone missing');
+  }
+  const recommendation = await waitFor(
+    `(() => {
+      const card = [...document.querySelectorAll('.rec-card')]
+        .find((c) => c.textContent.includes('CD image → CHD'));
+      return card ? card.innerText.replace(/\\s+/g, ' ').trim() : null;
+    })()`,
+    'start-screen recommendation',
+  );
+  log(`start screen recommendation: "${recommendation.slice(0, 90)}"`);
+  await screenshot('01-start-screen.png');
+
+  await evaluate(CLICK_TEXT('CD image → CHD', '.rec-card'));
+  await waitFor('!!document.querySelector("#f-input")', 'createcd form');
+  const prefilledInput = await evaluate('document.querySelector("#f-input")?.value || null');
+  if (prefilledInput !== cuePath) {
+    throw new Error(`Input was not carried over from the start screen (${prefilledInput})`);
+  }
+  const suggested = await waitFor(
+    'document.querySelector("#f-output")?.value || null',
+    'auto output',
+  );
   if (suggested !== chdPath) {
     throw new Error(`Unexpected auto output path: ${suggested}`);
   }
-  log(`output auto-filled: ${suggested}`);
+  log(`recommendation opened the form, output auto-filled: ${suggested}`);
+  await screenshot('01b-create-cd.png');
 
   if (!(await evaluate(CLICK_TEXT('Add to queue')))) throw new Error('Queue button missing');
   log('queued createcd job');
@@ -343,11 +366,15 @@ function shutdown() {
 async function main() {
   prepareFixtures();
   const extraArgs = process.env.ELECTRON_NO_SANDBOX === '1' ? ['--no-sandbox'] : [];
-  child = spawn(electronBinary, [root, ...extraArgs, `--remote-debugging-port=${port}`], {
-    cwd: root,
-    env: { ...process.env, CHDMAN_GUI_SMOKE: '1' },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  child = spawn(
+    electronBinary,
+    [root, ...extraArgs, `--remote-debugging-port=${port}`, cuePath],
+    {
+      cwd: root,
+      env: { ...process.env, CHDMAN_GUI_SMOKE: '1' },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  );
   child.stdout.on('data', (d) => process.stdout.write(`\x1b[90m${d}\x1b[0m`));
   child.stderr.on('data', (d) => process.stdout.write(`\x1b[90m${d}\x1b[0m`));
   child.on('close', (code) => {

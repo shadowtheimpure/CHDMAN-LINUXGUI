@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('api', {
 
   statPaths: (paths) => ipcRenderer.invoke('fs:stat', paths),
   readTextFile: (filePath) => ipcRenderer.invoke('fs:read-text', filePath),
+  probeFile: (filePath) => ipcRenderer.invoke('file:probe', filePath),
 
   reveal: (target) => ipcRenderer.invoke('shell:reveal', target),
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
@@ -29,11 +30,18 @@ contextBridge.exposeInMainWorld('api', {
   saveLog: (payload) => ipcRenderer.invoke('log:save', payload),
 
   appInfo: () => ipcRenderer.invoke('app:info'),
+  takeOpenFile: () => ipcRenderer.invoke('app:take-open-file'),
 
   onJobEvent: (callback) => {
     const listener = (_event, payload) => callback(payload);
     ipcRenderer.on('job:event', listener);
     return () => ipcRenderer.removeListener('job:event', listener);
+  },
+
+  onOpenFile: (callback) => {
+    const listener = (_event, filePath) => callback(filePath);
+    ipcRenderer.on('app:open-file', listener);
+    return () => ipcRenderer.removeListener('app:open-file', listener);
   },
 
   /** Resolve the on-disk path of a dropped File (Electron >= 32). */

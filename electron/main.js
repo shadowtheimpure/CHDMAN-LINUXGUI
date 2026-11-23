@@ -11,6 +11,34 @@ const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || '';
 
 /** @type {BrowserWindow | null} */
 let mainWindow = null;
+/** File passed on the command line (e.g. "Open With"), delivered after load. */
+let pendingOpenFile = null;
+
+/**
+ * Pick the first existing regular file from a process argv array. Skips the
+ * executable, Electron's app path (in development), and option flags.
+ */
+function fileFromArgs(argv) {
+  if (!Array.isArray(argv)) return null;
+  let appPath = '';
+  try {
+    appPath = path.resolve(app.getAppPath());
+  } catch {
+    /* ignore */
+  }
+  for (let index = 1; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (!arg || arg.startsWith('-')) continue;
+    const resolved = path.resolve(arg);
+    if (resolved === appPath) continue;
+    try {
+      if (fs.statSync(resolved).isFile()) return resolved;
+    } catch {
+      /* not a file */
+    }
+  }
+  return null;
+}
 
 /* ------------------------------------------------------------------ */
 /* Settings                                                            */
@@ -465,6 +493,93 @@ ipcMain.handle('fs:read-text', async (event, filePath) => {
   }
 });
 
+/** Read up to `length` bytes from the start of a file. */
+async function readHead(filePath, length) {
+  const handle = await fsp.open(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(length);
+    const { bytesRead } = await handle.read(buffer, 0, length, 0);
+    return buffer.subarray(0, bytesRead);
+  } finally {
+    await handle.close();
+  }
+}
+
+/**
+ * Lightweight file identification for the start screen: ISO/UDF magic, cue
+ * track lists, AVI headers and companion cue/gdi sheets for raw images.
+ */
+ipcMain.handle('file:probe', async (event, filePath) => {
+  if (typeof filePath !== 'string' || !filePath) {
+    return { path: filePath, exists: false };
+  }
+  let stat;
+  try {
+    stat = await fsp.stat(filePath);
+  } catch {
+    return { path: filePath, exists: false };
+  }
+  const ext = path.extname(filePath).slice(1).toLowerCase();
+  const result = {
+    path: filePath,
+    exists: true,
+    isFile: stat.isFile(),
+    size: stat.size,
+    ext,
+    iso: null,
+    cue: null,
+    gdi: null,
+    avi: false,
+    siblingCue: null,
+    siblingGdi: null,
+  };
+  if (!stat.isFile()) return result;
+
+  try {
+    if (ext === 'iso' || ext === 'img') {
+      const head = await readHead(filePath, 64 * 1024);
+      const text = head.toString('latin1');
+      const iso9660 = text.slice(0x8001, 0x8006) === 'CD001';
+      const udf = /BEA01|NSR0[23]/.test(text.slice(0x8000, 0x10000));
+      const label = iso9660 ? text.slice(0x8028, 0x8048).replace(/\0/g, '').trim() : '';
+      result.iso = { iso9660, udf, label };
+    } else if (ext === 'cue' || ext === 'gdi') {
+      const text = (await readHead(filePath, 1024 * 1024)).toString('utf8');
+      const files = [];
+      const tracks = [];
+      for (const match of text.matchAll(/^\s*FILE\s+(?:"([^"]+)"|(\S+))/gim)) {
+        files.push(match[1] || match[2]);
+      }
+      for (const match of text.matchAll(/^\s*TRACK\s+(\d+)\s+(\S+)/gim)) {
+        tracks.push({ number: Number(match[1]), type: match[2] });
+      }
+      if (ext === 'cue') {
+        result.cue = { files, tracks };
+      } else {
+        const gdiFiles = [];
+        for (const line of text.split(/\r?\n/)) {
+          const parts = line.trim().split(/\s+/);
+          if (parts.length >= 5 && /^\d+$/.test(parts[0])) gdiFiles.push(parts[4]);
+        }
+        result.gdi = { files: gdiFiles };
+      }
+    } else if (ext === 'avi') {
+      const head = await readHead(filePath, 12);
+      result.avi = head.length >= 12 && head.toString('latin1', 0, 4) === 'RIFF' && head.toString('latin1', 8, 12) === 'AVI ';
+    }
+  } catch {
+    /* identification is best-effort */
+  }
+
+  if (['bin', 'img', 'raw'].includes(ext)) {
+    const base = filePath.slice(0, filePath.length - path.extname(filePath).length);
+    if (fs.existsSync(`${base}.cue`)) result.siblingCue = `${base}.cue`;
+    if (fs.existsSync(`${base}.gdi`)) result.siblingGdi = `${base}.gdi`;
+  }
+
+  return result;
+});
+
 ipcMain.handle('shell:reveal', async (event, target) => {
   if (typeof target !== 'string' || !target) return { ok: false };
   try {
@@ -498,8 +613,13 @@ ipcMain.handle('log:save', async (event, payload = {}) => {
   return result.filePath;
 });
 
-ipcMain.handle('app:info', async () => ({
-  appVersion: app.getVersion(),
+ipcMain.handle('app:take-open-file', async () => {
+  const file = pendingOpenFile;
+  pendingOpenFile = null;
+  return file;
+});
+
+ipcMain.handle('app:info', async () => ({  appVersion: app.getVersion(),
   electron: process.versions.electron,
   chrome: process.versions.chrome,
   node: process.versions.node,
@@ -570,6 +690,7 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
 
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -579,16 +700,19 @@ const singleInstance = app.requestSingleInstanceLock();
 if (!singleInstance) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (event, commandLine) => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
+      const file = fileFromArgs(commandLine);
+      if (file) mainWindow.webContents.send('app:open-file', file);
     }
   });
 
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
     loadSettings();
+    pendingOpenFile = fileFromArgs(process.argv);
     nativeTheme.themeSource = settings.theme;
     createWindow();
 

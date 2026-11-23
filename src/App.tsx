@@ -3,6 +3,7 @@ import { COMMANDS_BY_ID } from './lib/commands';
 import type { AppInfo, AppSettings, ChdmanDetection, Job } from './lib/types';
 import { useQueue } from './hooks/useQueue';
 import { Sidebar, type Route } from './components/Sidebar';
+import { HomePage } from './components/HomePage';
 import { CommandPage } from './components/CommandPage';
 import { QueuePanel } from './components/QueuePanel';
 import { JobDialog } from './components/JobDialog';
@@ -19,7 +20,9 @@ export default function App() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [detection, setDetection] = useState<ChdmanDetection | null>(null);
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
-  const [route, setRoute] = useState<Route>({ kind: 'command', id: 'createcd' });
+  const [route, setRoute] = useState<Route>({ kind: 'home' });
+  const [homeFile, setHomeFile] = useState<string | null>(null);
+  const [homeKey, setHomeKey] = useState(0);
   const [queueVisible, setQueueVisible] = useState(true);
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -54,6 +57,28 @@ export default function App() {
     const listener = (event: MediaQueryListEvent) => setSystemDark(event.matches);
     media.addEventListener('change', listener);
     return () => media.removeEventListener('change', listener);
+  }, []);
+
+  useEffect(() => {
+    let canceled = false;
+    window.api
+      .takeOpenFile()
+      .then((filePath) => {
+        if (canceled || !filePath) return;
+        setHomeFile(filePath);
+        setHomeKey((value) => value + 1);
+        setRoute({ kind: 'home' });
+      })
+      .catch(() => {});
+    const unsubscribe = window.api.onOpenFile((filePath) => {
+      setHomeFile(filePath);
+      setHomeKey((value) => value + 1);
+      setRoute({ kind: 'home' });
+    });
+    return () => {
+      canceled = true;
+      unsubscribe();
+    };
   }, []);
 
   const resolvedTheme = settings?.theme === 'system' || !settings
@@ -158,6 +183,16 @@ export default function App() {
       />
 
       <main className="main">
+        {route.kind === 'home' && (
+          <HomePage
+            key={homeKey}
+            detection={detection}
+            initialPath={homeFile}
+            onNavigate={(id, prefill) => setRoute({ kind: 'command', id, prefill })}
+            onOpenSettings={() => setRoute({ kind: 'settings' })}
+          />
+        )}
+
         {route.kind === 'command' && activeCommand && (
           <CommandPage
             key={`${activeCommand.id}:${JSON.stringify(route.prefill ?? {})}`}

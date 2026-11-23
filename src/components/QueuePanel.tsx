@@ -1,27 +1,7 @@
-import type { CommandId } from '../lib/commands';
 import { formatDuration, formatTime, shortPath } from '../lib/format';
 import type { Job } from '../lib/types';
-import { Icon, type IconName } from './Icon';
-
-const ICONS: Record<CommandId, IconName> = {
-  info: 'search',
-  verify: 'shield',
-  createcd: 'disc',
-  createdvd: 'dvd',
-  createhd: 'hdd',
-  createraw: 'archive',
-  createld: 'film',
-  extractcd: 'download',
-  extractdvd: 'download',
-  extracthd: 'download',
-  extractraw: 'download',
-  extractld: 'download',
-  copy: 'copy',
-  addmeta: 'tag-plus',
-  delmeta: 'tag-minus',
-  dumpmeta: 'tag-down',
-  listtemplates: 'list',
-};
+import { COMMAND_ICONS } from './commandIcons';
+import { Icon } from './Icon';
 
 interface QueuePanelProps {
   jobs: Job[];
@@ -114,7 +94,7 @@ function JobCard({ job, onCancel, onRemove, onRetry, onShowLog, onReveal }: JobC
     <article className={`job-card status-${job.status}`}>
       <div className="job-top">
         <span className="job-icon">
-          <Icon name={ICONS[job.command]} size={16} />
+          <Icon name={COMMAND_ICONS[job.command]} size={16} />
         </span>
         <div className="job-title">
           <strong title={job.label}>{job.label}</strong>

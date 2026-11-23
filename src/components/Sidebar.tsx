@@ -1,32 +1,14 @@
 import { CATEGORY_LABELS, COMMANDS, type Category, type CommandId } from '../lib/commands';
 import type { ChdmanDetection } from '../lib/types';
-import { Icon, type IconName } from './Icon';
+import { COMMAND_ICONS } from './commandIcons';
+import { Icon } from './Icon';
 
 export type Route =
+  | { kind: 'home' }
   | { kind: 'command'; id: CommandId; prefill?: Record<string, string> }
   | { kind: 'settings' }
   | { kind: 'templates' }
   | { kind: 'about' };
-
-const COMMAND_ICONS: Record<CommandId, IconName> = {
-  info: 'search',
-  verify: 'shield',
-  createcd: 'disc',
-  createdvd: 'dvd',
-  createhd: 'hdd',
-  createraw: 'archive',
-  createld: 'film',
-  extractcd: 'download',
-  extractdvd: 'download',
-  extracthd: 'download',
-  extractraw: 'download',
-  extractld: 'download',
-  copy: 'copy',
-  addmeta: 'tag-plus',
-  delmeta: 'tag-minus',
-  dumpmeta: 'tag-down',
-  listtemplates: 'list',
-};
 
 interface SidebarProps {
   route: Route;
@@ -54,15 +36,28 @@ export function Sidebar({
 
   return (
     <aside className="sidebar">
-      <div className="brand">
-        <div className="brand-mark">CHD</div>
-        <div className="brand-text">
+      <button
+        className="brand brand-button"
+        onClick={() => onNavigate({ kind: 'home' })}
+        title="Start screen"
+      >
+        <span className="brand-mark">CHD</span>
+        <span className="brand-text">
           <strong>CHDMAN</strong>
           <span>GUI for Linux</span>
-        </div>
-      </div>
+        </span>
+      </button>
 
       <nav className="nav">
+        <div className="nav-group">
+          <button
+            className={`nav-item ${route.kind === 'home' ? 'active' : ''}`}
+            onClick={() => onNavigate({ kind: 'home' })}
+          >
+            <Icon name="home" size={16} />
+            <span>Start</span>
+          </button>
+        </div>
         {CATEGORIES.map((category) => (
           <div className="nav-group" key={category}>
             <span className="nav-group-title">{CATEGORY_LABELS[category]}</span>

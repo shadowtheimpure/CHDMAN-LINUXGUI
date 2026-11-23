@@ -30,7 +30,10 @@ export type IconName =
   | 'save'
   | 'queue'
   | 'flame'
-  | 'info';
+  | 'info'
+  | 'home'
+  | 'file'
+  | 'arrow-right';
 
 const PATHS: Record<IconName, React.ReactNode> = {
   search: (
@@ -191,6 +194,20 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M12 11v5M12 8h.01" />
     </>
   ),
+  home: (
+    <>
+      <path d="M3 11 12 4l9 7" />
+      <path d="M5 9.5V20h14V9.5" />
+      <path d="M10 20v-5h4v5" />
+    </>
+  ),
+  file: (
+    <>
+      <path d="M6 3h8l4 4v14H6V3Z" />
+      <path d="M14 3v4h4" />
+    </>
+  ),
+  'arrow-right': <path d="M5 12h14M13 6l6 6-6 6" />,
 };
 
 interface IconProps extends SVGProps<SVGSVGElement> {

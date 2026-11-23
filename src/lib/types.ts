@@ -36,6 +36,32 @@ export interface StatResult {
   mtime?: number;
 }
 
+export interface IsoProbe {
+  iso9660: boolean;
+  udf: boolean;
+  label: string;
+}
+
+export interface CueTrack {
+  number: number;
+  type: string;
+}
+
+/** Result of `file:probe` — cheap identification for the start screen. */
+export interface FileProbe {
+  path: string;
+  exists: boolean;
+  isFile?: boolean;
+  size?: number;
+  ext?: string;
+  iso?: IsoProbe | null;
+  cue?: { files: string[]; tracks: CueTrack[] } | null;
+  gdi?: { files: string[] } | null;
+  avi?: boolean;
+  siblingCue?: string | null;
+  siblingGdi?: string | null;
+}
+
 export interface AppInfo {
   appVersion: string;
   electron: string;
@@ -144,11 +170,14 @@ export interface ChdmanApi {
   openDialog(options: OpenDialogOptions): Promise<string[]>;
   statPaths(paths: string[]): Promise<StatResult[]>;
   readTextFile(filePath: string): Promise<string | null>;
+  probeFile(filePath: string): Promise<FileProbe>;
   reveal(target: string): Promise<{ ok: boolean }>;
   openExternal(url: string): Promise<{ ok: boolean }>;
   saveLog(payload: { defaultName?: string; content: string }): Promise<string | null>;
   appInfo(): Promise<AppInfo>;
+  takeOpenFile(): Promise<string | null>;
   onJobEvent(callback: (event: JobEvent) => void): () => void;
+  onOpenFile(callback: (filePath: string) => void): () => void;
   pathForFile(file: File): string;
 }
 

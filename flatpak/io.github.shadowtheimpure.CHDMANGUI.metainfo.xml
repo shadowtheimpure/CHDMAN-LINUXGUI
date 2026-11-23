@@ -32,6 +32,18 @@
   </categories>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.2.0" date="2026-11-23">
+      <description>
+        <p>
+          New start screen: choose or drop a file and the app identifies it and
+          recommends the valid operations with pre-filled forms. CHD media is
+          detected from its metadata, ISOs are checked for ISO 9660/UDF, cue
+          sets report their tracks and companion sheets are picked up for raw
+          images. Files can also be opened with the app from the command line
+          or the desktop's Open With action.
+        </p>
+      </description>
+    </release>
     <release version="0.1.2" date="2026-11-23">
       <description>
         <p>
